@@ -31,7 +31,6 @@ func (q *Queue) Push(v interface{}, t time.Time) {
 }
 
 func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
-LOOP:
 	for {
 		q.mu.Lock()
 		if q.queue.Len() == 0 {
@@ -49,23 +48,15 @@ LOOP:
 		if d > 0 {
 			q.mu.Unlock()
 			t := time.NewTimer(d)
-			for {
-				select {
-				case <-ctx.Done():
-					t.Stop()
-					return nil, ctx.Err()
-				case <-q.c:
-					q.mu.Lock()
-					i2 := q.queue.peek().(*item)
-					q.mu.Unlock()
-					if i != i2 {
-						t.Stop()
-						continue LOOP
-					}
-					continue
-				case <-t.C:
-					continue LOOP
-				}
+			select {
+			case <-ctx.Done():
+				t.Stop()
+				return nil, ctx.Err()
+			case <-q.c:
+				t.Stop()
+				continue
+			case <-t.C:
+				continue
 			}
 		}
 
