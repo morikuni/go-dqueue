@@ -1,0 +1,18 @@
+name: test
+on: [push]
+jobs: 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1"
+      - run: sudo apt-get update && sudo apt-get install make
+      - run: make coverage
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.out
+          yml: ./.codecov.yml
+          fail_ci_if_error: true
