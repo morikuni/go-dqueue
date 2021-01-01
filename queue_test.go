@@ -27,7 +27,7 @@ func TestQueue(t *testing.T) {
 		result <- v.(int)
 	}
 	push := func(q *Queue, v int, ts time.Time) {
-		q.Push(v, ts)
+		q.Push(v, DelayUntil(ts))
 	}
 
 	push(q, 5, now.Add(3*time.Second))
@@ -78,18 +78,16 @@ func TestQueue(t *testing.T) {
 func BenchmarkQueue_Push(b *testing.B) {
 	q := New()
 
-	now := time.Now()
 	for i := 0; i < b.N; i++ {
-		q.Push(1, now)
+		q.Push(1)
 	}
 }
 
 func BenchmarkQueue_Pull(b *testing.B) {
 	q := New()
 
-	now := time.Now()
 	for i := 0; i < b.N; i++ {
-		q.Push(1, now)
+		q.Push(1)
 	}
 
 	ctx := context.Background()
@@ -104,9 +102,8 @@ func BenchmarkQueue_PushPull(b *testing.B) {
 
 	c := make(chan struct{})
 	go func() {
-		now := time.Now()
 		for i := 0; i < b.N; i++ {
-			q.Push(1, now)
+			q.Push(1)
 		}
 		close(c)
 	}()
@@ -151,7 +148,7 @@ func TestQueuePBT(t *testing.T) {
 				for {
 					select {
 					case d := <-delayChan:
-						q.Push(d, time.Now().Add((50+time.Duration(d))*time.Millisecond))
+						q.Push(d, Delay((50+time.Duration(d))*time.Millisecond))
 					case <-stopPush:
 						return
 					}

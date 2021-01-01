@@ -20,9 +20,10 @@ func New() *Queue {
 	}
 }
 
-func (q *Queue) Push(v interface{}, t time.Time) {
+func (q *Queue) Push(v interface{}, opts ...PushOption) {
+	conf := newPushConfig(opts)
 	q.mu.Lock()
-	heap.Push(q.queue, &item{v, t})
+	heap.Push(q.queue, &item{v, conf.delayUntil})
 	q.mu.Unlock()
 	select {
 	case q.c <- struct{}{}:
@@ -44,7 +45,7 @@ func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
 		}
 
 		i := q.queue.peek().(*item)
-		d := i.Timestamp.Sub(time.Now())
+		d := i.DelayUntil.Sub(time.Now())
 		if d > 0 {
 			q.mu.Unlock()
 			t := time.NewTimer(d)
@@ -75,7 +76,7 @@ func (q queue) Len() int {
 }
 
 func (q queue) Less(i, j int) bool {
-	return q[i].Timestamp.Before(q[j].Timestamp)
+	return q[i].DelayUntil.Before(q[j].DelayUntil)
 }
 
 func (q queue) Swap(i, j int) {
@@ -99,6 +100,43 @@ func (q *queue) peek() interface{} {
 }
 
 type item struct {
-	Value     interface{}
-	Timestamp time.Time
+	Value      interface{}
+	DelayUntil time.Time
+}
+
+type PushOption interface {
+	apply(c *pushConfig)
+}
+
+type pushOptionFunc func(c *pushConfig)
+
+func (f pushOptionFunc) apply(c *pushConfig) {
+	f(c)
+}
+
+func Delay(d time.Duration) PushOption {
+	return pushOptionFunc(func(c *pushConfig) {
+		c.delayUntil = time.Now().Add(d)
+	})
+}
+
+func DelayUntil(t time.Time) PushOption {
+	return pushOptionFunc(func(c *pushConfig) {
+		c.delayUntil = t
+	})
+}
+
+type pushConfig struct {
+	delayUntil time.Time
+}
+
+func newPushConfig(opts []PushOption) *pushConfig {
+	c := new(pushConfig)
+	for _, o := range opts {
+		o.apply(c)
+	}
+	if c.delayUntil.IsZero() {
+		c.delayUntil = time.Now()
+	}
+	return c
 }
