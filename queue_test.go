@@ -75,6 +75,26 @@ func TestQueue(t *testing.T) {
 	}
 }
 
+func TestQueue_Order(t *testing.T) {
+	const N = 100000
+
+	q := New()
+
+	for i := 0; i < N; i++ {
+		q.Push(i)
+	}
+
+	for i := 0; i < N; i++ {
+		v, err := q.Pull(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if v != i {
+			t.Fatalf("want %d got %d", i, v)
+		}
+	}
+}
+
 func BenchmarkQueue_Push(b *testing.B) {
 	q := New()
 
