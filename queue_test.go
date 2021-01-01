@@ -99,7 +99,7 @@ func BenchmarkQueue_Pull(b *testing.B) {
 	}
 }
 
-func BenchmarkQueue_PullPull(b *testing.B) {
+func BenchmarkQueue_PushPull(b *testing.B) {
 	q := New()
 
 	c := make(chan struct{})
