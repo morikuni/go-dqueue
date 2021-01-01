@@ -22,8 +22,8 @@ func New() *Queue {
 
 func (q *Queue) Push(v interface{}, t time.Time) {
 	q.mu.Lock()
-	defer q.mu.Unlock()
 	heap.Push(q.queue, &item{v, t})
+	q.mu.Unlock()
 	select {
 	case q.c <- struct{}{}:
 	default:
