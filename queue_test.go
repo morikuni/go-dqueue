@@ -49,7 +49,9 @@ func TestQueue(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	push(q, 3, now.Add(time.Second))
 	time.Sleep(100 * time.Millisecond)
+	push(q, 7, now.Add(11*time.Second))
 	push(q, 4, now.Add(2*time.Second))
+	push(q, 6, now.Add(10*time.Second))
 	push(q, 1, now.Add(-time.Second))
 	push(q, 2, now)
 
@@ -61,7 +63,6 @@ func TestQueue(t *testing.T) {
 	case <-ctx.Done():
 	case <-c2:
 	}
-	close(result)
 
 	for i := 0; i < 5; i++ {
 		var v int
@@ -72,6 +73,14 @@ func TestQueue(t *testing.T) {
 		if v != i+1 {
 			t.Errorf("want %d got %d", i+1, v)
 		}
+	}
+
+	vs := q.Flush()
+	if vs[0] != 6 {
+		t.Errorf("want %d got %d", 6, vs[0])
+	}
+	if vs[1] != 7 {
+		t.Errorf("want %d got %d", 7, vs[1])
 	}
 }
 

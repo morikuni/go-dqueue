@@ -44,7 +44,7 @@ func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
 			}
 		}
 
-		i := q.queue.peek().(*item)
+		i := q.queue.peek()
 		d := i.DelayUntil.Sub(time.Now())
 		if d > 0 {
 			q.mu.Unlock()
@@ -65,6 +65,19 @@ func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
 		q.mu.Unlock()
 		return item.Value, nil
 	}
+}
+
+func (q *Queue) Flush() []interface{} {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	is := make([]interface{}, 0, q.queue.Len())
+	for q.queue.Len() > 0 {
+		i := heap.Pop(q.queue).(*item)
+		is = append(is, i.Value)
+	}
+
+	return is
 }
 
 type queue []*item
@@ -95,7 +108,7 @@ func (q *queue) Pop() interface{} {
 	return item
 }
 
-func (q *queue) peek() interface{} {
+func (q *queue) peek() *item {
 	return (*q)[0]
 }
 
