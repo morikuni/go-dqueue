@@ -139,7 +139,7 @@ func BenchmarkQueue_PushPull(b *testing.B) {
 func TestQueuePBT(t *testing.T) {
 	const (
 		maxDelay  = 100
-		allowDiff = 1
+		allowDiff = 5
 	)
 	parallelism := gen.IntRange(1, 10)
 	delays := gen.SliceOf(gen.UIntRange(0, maxDelay))
