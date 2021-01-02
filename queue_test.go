@@ -19,14 +19,14 @@ func TestQueue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
-	pull := func(q *Queue) {
+	pull := func(q Queue) {
 		v, err := q.Pull(ctx)
 		if err != nil {
 			return
 		}
 		result <- v.(int)
 	}
-	push := func(q *Queue, v int, ts time.Time) {
+	push := func(q Queue, v int, ts time.Time) {
 		q.Push(v, DelayUntil(ts))
 	}
 

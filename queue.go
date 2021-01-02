@@ -7,20 +7,26 @@ import (
 	"time"
 )
 
-type Queue struct {
+type Queue interface {
+	Push(v interface{}, opts ...PushOption)
+	Pull(ctx context.Context) (interface{}, error)
+	Flush() []interface{}
+}
+
+type queue struct {
 	mu    sync.Mutex
-	queue *queue
+	queue *timeHeap
 	c     chan struct{}
 }
 
-func New() *Queue {
-	return &Queue{
-		queue: &queue{},
+func New() Queue {
+	return &queue{
+		queue: &timeHeap{},
 		c:     make(chan struct{}),
 	}
 }
 
-func (q *Queue) Push(v interface{}, opts ...PushOption) {
+func (q *queue) Push(v interface{}, opts ...PushOption) {
 	conf := newPushConfig(opts)
 	q.mu.Lock()
 	heap.Push(q.queue, &item{v, conf.delayUntil})
@@ -31,7 +37,7 @@ func (q *Queue) Push(v interface{}, opts ...PushOption) {
 	}
 }
 
-func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
+func (q *queue) Pull(ctx context.Context) (interface{}, error) {
 	for {
 		q.mu.Lock()
 		if q.queue.Len() == 0 {
@@ -67,7 +73,7 @@ func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
 	}
 }
 
-func (q *Queue) Flush() []interface{} {
+func (q *queue) Flush() []interface{} {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -80,27 +86,27 @@ func (q *Queue) Flush() []interface{} {
 	return is
 }
 
-type queue []*item
+type timeHeap []*item
 
-var _ heap.Interface = (*queue)(nil)
+var _ heap.Interface = (*timeHeap)(nil)
 
-func (q queue) Len() int {
+func (q timeHeap) Len() int {
 	return len(q)
 }
 
-func (q queue) Less(i, j int) bool {
+func (q timeHeap) Less(i, j int) bool {
 	return q[i].DelayUntil.Before(q[j].DelayUntil)
 }
 
-func (q queue) Swap(i, j int) {
+func (q timeHeap) Swap(i, j int) {
 	q[i], q[j] = q[j], q[i]
 }
 
-func (q *queue) Push(x interface{}) {
+func (q *timeHeap) Push(x interface{}) {
 	*q = append(*q, x.(*item))
 }
 
-func (q *queue) Pop() interface{} {
+func (q *timeHeap) Pop() interface{} {
 	n := len(*q)
 	item := (*q)[n-1]
 	(*q)[n-1] = nil // avoid memory leak
@@ -108,7 +114,7 @@ func (q *queue) Pop() interface{} {
 	return item
 }
 
-func (q *queue) peek() *item {
+func (q *timeHeap) peek() *item {
 	return (*q)[0]
 }
 
