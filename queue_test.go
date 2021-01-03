@@ -70,18 +70,12 @@ func TestQueue(t *testing.T) {
 		case <-ctx.Done():
 		case v = <-result:
 		}
-		if v != i+1 {
-			t.Errorf("want %d got %d", i+1, v)
-		}
+		equal(t, v, i+1)
 	}
 
 	vs := q.Flush()
-	if vs[0] != 6 {
-		t.Errorf("want %d got %d", 6, vs[0])
-	}
-	if vs[1] != 7 {
-		t.Errorf("want %d got %d", 7, vs[1])
-	}
+	equal(t, vs[0], 6)
+	equal(t, vs[1], 7)
 }
 
 func TestQueue_Order(t *testing.T) {
@@ -98,9 +92,7 @@ func TestQueue_Order(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if v != i {
-			t.Fatalf("want %d got %d", i, v)
-		}
+		equal(t, v, i)
 	}
 }
 
@@ -261,4 +253,12 @@ func TestQueuePBT(t *testing.T) {
 	))
 
 	properties.TestingRun(t)
+}
+
+func equal(tb testing.TB, a, b interface{}) {
+	tb.Helper()
+
+	if a != b {
+		tb.Fatalf("%v != %v", a, b)
+	}
 }
