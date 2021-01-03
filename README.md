@@ -1,2 +1,1 @@
-# queue
-Queue implementation for Go
+# go-queue
