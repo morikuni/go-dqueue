@@ -1,4 +1,4 @@
-package queue
+package dqueue
 
 import (
 	"container/heap"

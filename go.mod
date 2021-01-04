@@ -1,4 +1,4 @@
-module github.com/morikuni/go-queue
+module github.com/morikuni/go-dqueue
 
 go 1.15
 
