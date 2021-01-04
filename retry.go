@@ -8,14 +8,12 @@ import (
 )
 
 type RetryQueue struct {
-	queue Queue
+	queue *Queue
 }
 
 func NewRetryQueue() *RetryQueue {
 	return &RetryQueue{New()}
 }
-
-var _ Queue = (*RetryQueue)(nil)
 
 func (q *RetryQueue) Push(v interface{}, opts ...PushOption) {
 	q.queue.Push(&RetryItem{0, v, q.queue, 0}, opts...)
@@ -47,7 +45,7 @@ func (q *RetryQueue) Flush() []interface{} {
 type RetryItem struct {
 	retryCount int
 	value      interface{}
-	queue      Queue
+	queue      *Queue
 	done       uint32
 }
 

@@ -7,26 +7,20 @@ import (
 	"time"
 )
 
-type Queue interface {
-	Push(v interface{}, opts ...PushOption)
-	Pull(ctx context.Context) (interface{}, error)
-	Flush() []interface{}
-}
-
-type queue struct {
+type Queue struct {
 	mu    sync.Mutex
-	queue *timeHeap
+	queue *queue
 	c     chan struct{}
 }
 
-func New() Queue {
-	return &queue{
-		queue: &timeHeap{},
+func New() *Queue {
+	return &Queue{
+		queue: &queue{},
 		c:     make(chan struct{}),
 	}
 }
 
-func (q *queue) Push(v interface{}, opts ...PushOption) {
+func (q *Queue) Push(v interface{}, opts ...PushOption) {
 	conf := newPushConfig(opts)
 	q.mu.Lock()
 	heap.Push(q.queue, &item{v, conf.delayUntil})
@@ -37,7 +31,7 @@ func (q *queue) Push(v interface{}, opts ...PushOption) {
 	}
 }
 
-func (q *queue) Pull(ctx context.Context) (interface{}, error) {
+func (q *Queue) Pull(ctx context.Context) (interface{}, error) {
 	for {
 		q.mu.Lock()
 		if q.queue.Len() == 0 {
@@ -73,7 +67,7 @@ func (q *queue) Pull(ctx context.Context) (interface{}, error) {
 	}
 }
 
-func (q *queue) Flush() []interface{} {
+func (q *Queue) Flush() []interface{} {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -86,27 +80,27 @@ func (q *queue) Flush() []interface{} {
 	return is
 }
 
-type timeHeap []*item
+type queue []*item
 
-var _ heap.Interface = (*timeHeap)(nil)
+var _ heap.Interface = (*queue)(nil)
 
-func (q timeHeap) Len() int {
+func (q queue) Len() int {
 	return len(q)
 }
 
-func (q timeHeap) Less(i, j int) bool {
+func (q queue) Less(i, j int) bool {
 	return q[i].DelayUntil.Before(q[j].DelayUntil)
 }
 
-func (q timeHeap) Swap(i, j int) {
+func (q queue) Swap(i, j int) {
 	q[i], q[j] = q[j], q[i]
 }
 
-func (q *timeHeap) Push(x interface{}) {
+func (q *queue) Push(x interface{}) {
 	*q = append(*q, x.(*item))
 }
 
-func (q *timeHeap) Pop() interface{} {
+func (q *queue) Pop() interface{} {
 	n := len(*q)
 	item := (*q)[n-1]
 	(*q)[n-1] = nil // avoid memory leak
@@ -114,7 +108,7 @@ func (q *timeHeap) Pop() interface{} {
 	return item
 }
 
-func (q *timeHeap) peek() *item {
+func (q *queue) peek() *item {
 	return (*q)[0]
 }
 
