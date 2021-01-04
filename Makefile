@@ -4,7 +4,7 @@ test:
 
 .PHONY: bench
 bench:
-	go test -bench . -benchmem -count 1 ./...
+	go test -bench . -benchmem -count 1 -benchtime 10s ./...
 
 .PHONY: coverage
 coverage:
